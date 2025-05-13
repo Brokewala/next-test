@@ -36,6 +36,7 @@ jobs:
           local-dir: .next/standalone/
           server-dir: /
 
+
       # Déploiement de `.next/static` dans `/.next/static/`
       - name: Deploy .next/static
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
@@ -55,3 +56,14 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: public/
           server-dir: /public/
+
+
+        # Déploiement de `prisma/` dans `/prisma/`
+      - name: Deploy prisma assets
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: prisma/
+          server-dir: /prisma/
