@@ -1,4 +1,4 @@
-name: Deploy with FTP
+name: Deploy Next.js to FTP (like Docker copy)
 
 on:
   push:
@@ -6,26 +6,52 @@ on:
       - main
 
 jobs:
-  ftp-deploy:
-    name: Upload via FTP
+  deploy:
+    name: Build and Deploy to FTP
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Build project
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies and build
         run: |
           npm install
           npm run build
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
-      - name: Upload via FTP
+      # Déploiement de `.next/standalone` dans `/www/duka/`
+      - name: Deploy .next/standalone
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: .next/
+          local-dir: .next/standalone/
           server-dir: /www/duka/
+
+      # Déploiement de `.next/static` dans `/www/duka/.next/static/`
+      - name: Deploy .next/static
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: .next/static/
+          server-dir: /www/duka/.next/static/
+
+      # Déploiement de `public/` dans `/www/duka/public/`
+      - name: Deploy public assets
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: public/
+          server-dir: /www/duka/public/
