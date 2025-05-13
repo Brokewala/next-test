@@ -1,4 +1,4 @@
-name: Deploy Next.js with Prisma
+name: Deploy with FTP
 
 on:
   push:
@@ -6,51 +6,26 @@ on:
       - main
 
 jobs:
-  deploy:
+  ftp-deploy:
+    name: Upload via FTP
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate Prisma client
-        run: npx prisma generate
-
-      # - name: Run Prisma Migrate
-      #   run: npx prisma migrate deploy
-      #   env:
-      #     DATABASE_URL: ${{ secrets.DATABASE_URL }}
-
-      - name: Build Next.js
-        run: npm run build
+      - name: Build project
+        run: |
+          npm install
+          npm run build
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
-      - name: Copy files via SSH
-        uses: appleboy/scp-action@v0.1.7
+      - name: Upload via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
-          host: node241-eu.n0c.com
-          username: akfrgser
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: ".next,public,package.json,prisma,node_modules"
-          target: "/home/akfrgser/duka"
-
-      - name: Restart app via SSH
-        uses: appleboy/ssh-action@master
-        with:
-          host: node241-eu.n0c.com
-          username: akfrgser
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd /home/akfrgser/duka
-            source /home/akfrgser/nodevenv/duka/20/bin/activate
-            npm install --omit=dev
-            touch tmp/restart.txt
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: .next/
+          server-dir: /www/duka/
