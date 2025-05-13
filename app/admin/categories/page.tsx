@@ -12,7 +12,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React from 'react';
 
-// was --------dde
+// was --------dde d
 const Page = () => {
   const route = useRouter();
 
