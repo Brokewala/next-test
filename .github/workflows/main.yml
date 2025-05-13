@@ -1,59 +1,56 @@
-name: Deploy Next.js + Prisma
+name: Deploy Next.js with Prisma
 
 on:
   push:
-    branches: [main]
-
-env:
-  APP_DIR: /home/akfrgser/duka
-  HOST: node241-eu.n0c.com
-  USER: akfrgser
+    branches:
+      - main
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: '20'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Generate Prisma Client
+      - name: Generate Prisma client
         run: npx prisma generate
 
-      - name: Build Next.js app (standalone)
-        run: |
-          npm run build
-          mkdir -p output
-          cp -r .next/standalone output/
-          cp -r .next/static output/
-          cp -r public output/
-          cp server.js output/
-          cp package.json output/
+      - name: Run Prisma Migrate
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
-      - name: Prepare SSH connection
-        uses: webfactory/ssh-agent@v0.9.0
+      - name: Build Next.js
+        run: npm run build
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Copy files via SSH
+        uses: appleboy/scp-action@v0.1.7
         with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          host: node241-eu.n0c.com
+          username: akfrgser
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: ".next,public,package.json,prisma,node_modules"
+          target: "/home/akfrgser/duka"
 
-      - name: Upload build to server
-        run: |
-          rsync -avz --delete output/ $USER@$HOST:$APP_DIR
-
-      - name: Deploy and run Prisma migration
-        run: |
-          ssh $USER@$HOST << 'EOF'
-          cd $APP_DIR
-          source /home/akfrgser/nodevenv/duka/20/bin/activate
-          export DATABASE_URL="${{ secrets.DATABASE_URL }}"
-          npm install --omit=dev
-          npx prisma migrate deploy
-          passenger-config restart-app $APP_DIR
-          EOF
+      - name: Restart app via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: node241-eu.n0c.com
+          username: akfrgser
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/akfrgser/duka
+            source /home/akfrgser/nodevenv/duka/20/bin/activate
+            npm install --omit=dev
+            touch tmp/restart.txt
