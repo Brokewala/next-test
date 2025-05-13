@@ -26,7 +26,7 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
-      # Déploiement de `.next/standalone` dans `/www/duka/`
+      # Déploiement de `.next/standalone` dans `/`
       - name: Deploy .next/standalone
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
@@ -34,9 +34,9 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: .next/standalone/
-          server-dir: /www/duka/
+          server-dir: /
 
-      # Déploiement de `.next/static` dans `/www/duka/.next/static/`
+      # Déploiement de `.next/static` dans `/.next/static/`
       - name: Deploy .next/static
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
@@ -44,9 +44,9 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: .next/static/
-          server-dir: /www/duka/.next/static/
+          server-dir: /.next/static/
 
-      # Déploiement de `public/` dans `/www/duka/public/`
+      # Déploiement de `public/` dans `/public/`
       - name: Deploy public assets
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
@@ -54,4 +54,4 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: public/
-          server-dir: /www/duka/public/
+          server-dir: /public/
