@@ -33,19 +33,33 @@ jobs:
           cp -r .next/static deploy/.next/
           cp -r public deploy/
           cp -r prisma deploy/
-          cp unzip.php deploy/
+          echo "<?php
+          \$zipFile = 'app.zip';
+          if (!file_exists(\$zipFile)) { echo 'Fichier ZIP non trouvé.'; exit; }
+          \$zip = new ZipArchive;
+          if (\$zip->open(\$zipFile) === TRUE) {
+              \$zip->extractTo('.');
+              \$zip->close();
+              unlink(\$zipFile);
+              unlink(__FILE__);
+              echo 'Déploiement terminé avec succès.';
+          } else {
+              echo 'Erreur lors de l\\'extraction.';
+          }
+          ?>" > deploy/unzip.php
           cd deploy && zip -r ../app.zip .
 
-      - name: Upload app.zip and unzip.php via FTP
+      - name: Copy ZIP and unzip script
+        run: |
+          mkdir ftp-upload
+          cp app.zip ftp-upload/
+          cp deploy/unzip.php ftp-upload/
+
+      - name: Upload to FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./
+          local-dir: ftp-upload/
           server-dir: /
-          exclude: |
-            **
-          include: |
-            app.zip
-            unzip.php
