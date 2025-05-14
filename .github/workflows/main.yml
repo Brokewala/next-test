@@ -1,4 +1,4 @@
-name: Deploy Next.js to FTP (like Docker copy)
+name: Deploy Next.js as zip via FTP
 
 on:
   push:
@@ -7,8 +7,8 @@ on:
 
 jobs:
   deploy:
-    name: Build and Deploy to FTP
     runs-on: ubuntu-latest
+    name: Build and Upload ZIP to FTP
 
     steps:
       - name: Checkout code
@@ -23,51 +23,40 @@ jobs:
         run: |
           npm install
           npm run build
-          echo "=== Contenu de .next/ ==="
-          ls -R .next/
-          echo "=== Contenu de .next/standalone ==="
-          ls -R .next/standalone
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
-      # Déploiement de `.next/standalone` dans `/`
-      - name: Deploy .next/standalone
+      - name: Prepare deployment zip
+        run: |
+          mkdir deploy
+          cp -r .next/standalone/* deploy/
+          cp -r .next/static deploy/.next/
+          cp -r public deploy/public
+          cp -r prisma deploy/prisma
+          cd deploy
+          zip -r ../app.zip .
+          cd ..
+
+      - name: Upload ZIP to FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: .next/standalone/
+          local-dir: ./
           server-dir: /
+          exclude: |
+            **
+          include: |
+            app.zip
+            post-deploy.sh
 
-
-      # Déploiement de `.next/static` dans `/.next/static/`
-      - name: Deploy .next/static
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      - name: Deploy - trigger remote unzip
+        uses: sebastianpopp/ssh-action@v1
         with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: .next/static/
-          server-dir: /.next/static/
-
-      # Déploiement de `public/` dans `/public/`
-      - name: Deploy public assets
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: public/
-          server-dir: /public/
-
-
-        # Déploiement de `prisma/` dans `/prisma/`
-      - name: Deploy prisma assets
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: prisma/
-          server-dir: /prisma/
+          host: ${{ secrets.FTP_SERVER }}
+          user: ${{ secrets.SSH_USERNAME }}
+          private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            unzip -o app.zip -d ./
+            rm app.zip
