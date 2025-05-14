@@ -1,4 +1,4 @@
-name: Deploy Next.js as zip via FTP
+name: Deploy Next.js to FTP with ZIP
 
 on:
   push:
@@ -7,8 +7,8 @@ on:
 
 jobs:
   deploy:
+    name: Build and Deploy ZIP to FTP
     runs-on: ubuntu-latest
-    name: Build and Upload ZIP to FTP
 
     steps:
       - name: Checkout code
@@ -26,18 +26,17 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
-      - name: Prepare deployment zip
+      - name: Prepare deployment folder
         run: |
-          mkdir deploy
-          cp -r .next/standalone/* deploy/
+          mkdir -p deploy/.next
+          cp -r .next/standalone deploy/
           cp -r .next/static deploy/.next/
-          cp -r public deploy/public
-          cp -r prisma deploy/prisma
-          cd deploy
-          zip -r ../app.zip .
-          cd ..
+          cp -r public deploy/
+          cp -r prisma deploy/
+          cp unzip.php deploy/
+          cd deploy && zip -r ../app.zip .
 
-      - name: Upload ZIP to FTP
+      - name: Upload app.zip and unzip.php via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ${{ secrets.FTP_SERVER }}
@@ -49,15 +48,4 @@ jobs:
             **
           include: |
             app.zip
-            post-deploy.sh
-
-      - name: Deploy - trigger remote unzip
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 22
-          script: |
-            unzip -o app.zip -d ./
-            rm app.zip
+            unzip.php
