@@ -22,6 +22,7 @@ jobs:
       - name: Install dependencies and build
         run: |
           npm install
+          npx prisma generate
           npm run build
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
