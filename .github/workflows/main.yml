@@ -30,7 +30,14 @@ jobs:
         run: |
           mkdir -p deploy/.next
           cp -r .next/standalone/. deploy/
-          cp -r .next/static deploy/.next/
+
+          # Si le dossier .next existe dans standalone, fusionner avec static
+          if [ -d ".next/standalone/.next" ]; then
+            cp -r .next/standalone/.next/* deploy/.next/
+          fi
+
+          cp -r .next/static deploy/.next/static
+
           cp -r public deploy/
           cp -r prisma deploy/
           echo "<?php
