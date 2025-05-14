@@ -63,3 +63,7 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ftp-upload/
           server-dir: /
+
+      - name: Trigger unzip.php via HTTP request
+        run: |
+          curl -s https://duka.lapostecomores.com/unzip.php || echo "Erreur de déploiement"
