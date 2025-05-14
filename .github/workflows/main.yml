@@ -52,11 +52,12 @@ jobs:
             post-deploy.sh
 
       - name: Deploy - trigger remote unzip
-        uses: sebastianpopp/ssh-action@v1
+        uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.FTP_SERVER }}
-          user: ${{ secrets.SSH_USERNAME }}
-          private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
           script: |
             unzip -o app.zip -d ./
             rm app.zip
